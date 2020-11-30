@@ -48,10 +48,23 @@ public final class AnotherConcurrentGUI extends JFrame {
          * thread management should be left to
          * java.util.concurrent.ExecutorService
          */
+
         final Agent agent = new Agent();
-        final TimeStopper ts = new TimeStopper();
         new Thread(agent).start();
-        new Thread(ts).start();
+
+        new Thread(() -> {
+            final long time = 10_000;
+                    try {
+                        Thread.sleep(time);
+                        SwingUtilities.invokeAndWait(() ->  this.setEnabled(false));
+                        agent.stopCounting();
+
+                    } catch (InvocationTargetException | InterruptedException e) {
+                        e.printStackTrace();
+                    }
+        }).start();
+
+
         /*
          * Register a listener that stops it
          */
@@ -164,21 +177,4 @@ public final class AnotherConcurrentGUI extends JFrame {
             this.stop = true;
         }
     }
-
-    private class TimeStopper implements Runnable {
-            private static final long TIME = 10_000;
-            @Override
-            public void run() {
-                while (true) {
-                    try {
-                        Thread.sleep(TIME);
-                        SwingUtilities.invokeAndWait(() -> AnotherConcurrentGUI.this.setEnabled(false));
-
-                    } catch (InvocationTargetException | InterruptedException e) {
-                        // TODO Auto-generated catch block
-                        e.printStackTrace();
-                    }
-                }
-            }
-        }
 }
