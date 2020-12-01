@@ -15,19 +15,17 @@ public class MultiThreadedSumMatrix implements SumMatrix {
 
     @Override
     public double sum(final double[][] matrix) {
-        final int size = matrix.length % nthread + matrix.length / nthread;
         final List<Double> list = new ArrayList<>();
-        for (final double[] d : matrix) {
-            for (int i = 0; i < matrix.length; i++) {
-                list.add(d[i]);
-                System.out.println(d[i]);
+        for (final double[] d: matrix) {
+            for (final double a : d) {
+                list.add(Double.valueOf(a));
             }
         }
-        System.out.println(list);
+        final int size = list.size() % nthread + list.size() / nthread;
         /*
          * Build a stream of workers
          */
-        return DoubleStream.iterate(0, start -> (int) start + size)
+        return  DoubleStream.iterate(0, start -> (int) start + size)
                 .limit(nthread)
                 .mapToObj(start -> new Worker(list, (int) start, size))
                 // Start them
@@ -35,7 +33,7 @@ public class MultiThreadedSumMatrix implements SumMatrix {
                 // Join them
                 .peek(MultiThreadedSumMatrix::joinUninterruptibly)
                  // Get their result and sum
-                .mapToLong(Worker::getResult)
+                .mapToDouble(Worker::getResult)
                 .sum();
     }
 
@@ -55,7 +53,7 @@ public class MultiThreadedSumMatrix implements SumMatrix {
         private final List<Double> list;
         private final int startpos;
         private final int nelem;
-        private long res;
+        private double res;
 
         /**
          * Build a new worker.
@@ -87,7 +85,7 @@ public class MultiThreadedSumMatrix implements SumMatrix {
          * 
          * @return the sum of every element in the array
          */
-        public long getResult() {
+        public double getResult() {
             return this.res;
         }
 
