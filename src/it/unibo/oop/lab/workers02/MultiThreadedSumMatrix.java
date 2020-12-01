@@ -1,8 +1,7 @@
 package it.unibo.oop.lab.workers02;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.DoubleStream;
+import java.util.stream.IntStream;
 
 
 public class MultiThreadedSumMatrix implements SumMatrix {
@@ -15,38 +14,24 @@ public class MultiThreadedSumMatrix implements SumMatrix {
 
     @Override
     public double sum(final double[][] matrix) {
-        final List<Double> list = new ArrayList<>();
-        for (final double[] d: matrix) {
-            for (final double a : d) {
-                list.add(Double.valueOf(a));
-            }
-        }
-        final int size = list.size() % nthread + list.size() / nthread;
+
+        final int size = matrix.length % nthread + matrix.length / nthread;
         /*
          * Build a stream of workers
          */
-        return  DoubleStream.iterate(0, start -> (int) start + size)
+        return  IntStream.iterate(0, start -> (int) start + size)
                 .limit(nthread)
-                .mapToObj(start -> new Worker(list, (int) start, size))
-                // Start them
-                .peek(Thread::start)
-                // Join them
-                .peek(MultiThreadedSumMatrix::joinUninterruptibly)
-                 // Get their result and sum
-                .mapToDouble(Worker::getResult)
+                .parallel()
+                .map(startpos -> {
+                    System.out.println("Working from position " + startpos + " to position " + (startpos + nelem - 1));
+                    for (int i = startpos; i < list.size() && i < startpos + nelem; i++) {
+                        this.res += this.list.get(i);
+                    }
+                })
                 .sum();
     }
 
-    private static void joinUninterruptibly(final Thread target) {
-        var joined = false;
-        while (!joined) {
-            try {
-                target.join();
-                joined = true;
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
+
     }
 
     private static class Worker extends Thread {
